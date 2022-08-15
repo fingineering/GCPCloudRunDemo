@@ -14,5 +14,5 @@ variable "location" {
 
 variable "RunJobName" {
   type = string
-  default = "CloudRunDemo"
+  default = "cloud-run-demo"
 }

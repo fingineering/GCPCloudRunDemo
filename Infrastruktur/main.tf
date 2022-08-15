@@ -24,7 +24,7 @@ provider "google" {
  */
 resource "google_service_account" "cloud_run_demo_sa" {
   project      = var.project_name
-  account_id   = "cloud_run_demo_sa"
+  account_id   = "cloudrundemosa"
   description  = "Running Cloud Run Scheduled Job to update data in BigQuery under this account"
   display_name = "Cloud Run Demo Service Account"
 }
@@ -38,15 +38,20 @@ resource "google_service_account" "cloud_run_demo_sa" {
  * In this example the container is hosted in Google Container Registry, it is 
  * as well possible to use any other container registry like DockerHub oder ACR
  */
-resource "google_container_registry" "gcr_demo" {
-  project  = var.project_name
-  location = var.location
+resource "google_artifact_registry_repository" "container_demo_repo" {
+  location      = var.location
+  project       = var.project_name
+  repository_id = "cloud-run-demo"
+  description   = "Demo docker repository"
+  format        = "DOCKER"
 }
 
 // create the url of a container in the registry, by name of container
 data "google_container_registry_image" "demo_container" {
-  name = var.container_name
+  name    = var.container_name
+  project = var.project_name
 }
+
 
 /* 
  * Cloud Run Job
@@ -103,10 +108,11 @@ resource "google_cloud_scheduler_job" "default" {
 # Cloud Build to update the cloud run job
 resource "google_cloudbuild_trigger" "demo_cloud_build" {
   name        = "CloudRundDemo"
+  project     = var.project_name
   description = "Triggers a new cloud run image to be build, when new code is published"
   github {
     owner = "fingineering"
-    name  = ""
+    name  = "GCPCloudRunDemo"
     push {
       branch = "main"
     }
