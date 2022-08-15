@@ -122,6 +122,7 @@ resource "google_cloudbuild_trigger" "demo_cloud_build" {
   substitutions = {
     "_REPO" = var.container_name
     "_IMAGE_NAME" = var.container_name
+    "_LOCATION" = var.location
   }
 }
 
