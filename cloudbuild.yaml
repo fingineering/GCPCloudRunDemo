@@ -1,7 +1,9 @@
 # [START cloudbuild_quickstart_build]
 steps:
 - name: 'gcr.io/cloud-builders/docker'
-  args: [ 'build', '-t', 'us-west2-docker.pkg.dev/$PROJECT_ID/quickstart-docker-repo/quickstart-image:tag1', '.' ]
+  args: [ 'build', '-t', '$LOCATION.pkg.dev/$PROJECT_ID/$_REPO/$_IMAGE_NAME:latest', './App' ]
 images:
-- 'us-west2-docker.pkg.dev/$PROJECT_ID/quickstart-docker-repo/quickstart-image:tag1'
+- '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_IMAGE_NAME:latest'
+options:
+  logging: CLOUD_LOGGING_ONLY
 # [END cloudbuild_quickstart_build]

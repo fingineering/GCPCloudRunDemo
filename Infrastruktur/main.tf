@@ -41,7 +41,7 @@ resource "google_service_account" "cloud_run_demo_sa" {
 resource "google_artifact_registry_repository" "container_demo_repo" {
   location      = var.location
   project       = var.project_name
-  repository_id = "cloud-run-demo"
+  repository_id = var.container_name
   description   = "Demo docker repository"
   format        = "DOCKER"
 }
@@ -72,7 +72,7 @@ resource "google_cloud_run_service" "cloud_run_demo" {
   template {
     spec {
       containers {
-        image = data.google_container_registry_image.demo_container.image_url
+        image = "europe-west3-docker.pkg.dev/${var.project_name}/${var.container_name}"
       }
     }
   }
@@ -118,6 +118,11 @@ resource "google_cloudbuild_trigger" "demo_cloud_build" {
     }
   }
   filename = "cloudbuild.yaml"
+
+  substitutions = {
+    "_REPO" = var.container_name
+    "_IMAGE_NAME" = var.container_name
+  }
 }
 
 # IAM Binding for Cloud Run
