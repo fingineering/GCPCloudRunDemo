@@ -9,6 +9,8 @@ terraform {
 
 provider "google" {
   # Configuration options
+  project = var.project_name
+  region = var.location
 }
 
 
@@ -72,7 +74,7 @@ resource "google_cloud_run_service" "cloud_run_demo" {
   template {
     spec {
       containers {
-        image = "europe-west3-docker.pkg.dev/${var.project_name}/${var.container_name}"
+        image = "europe-west3-docker.pkg.dev/${var.project_name}/${var.container_name}/${var.container_name}:latest"
       }
     }
   }
@@ -84,8 +86,9 @@ resource "google_cloud_run_service" "cloud_run_demo" {
 
 }
 # A Schedule to run the job on
-resource "google_cloud_scheduler_job" "default" {
+resource "google_cloud_scheduler_job" "timer_trigger" {
   name             = "scheduled-cloud-run-job"
+  project          = var.project_name
   description      = "Invoke a Cloud Run container on a schedule."
   schedule         = "*/8 * * * *"
   time_zone        = "Europe/Berlin"
@@ -120,9 +123,9 @@ resource "google_cloudbuild_trigger" "demo_cloud_build" {
   filename = "cloudbuild.yaml"
 
   substitutions = {
-    "_REPO" = var.container_name
+    "_REPO"       = var.container_name
     "_IMAGE_NAME" = var.container_name
-    "_LOCATION" = var.location
+    "_LOCATION"   = var.location
   }
 }
 
