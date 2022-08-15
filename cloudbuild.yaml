@@ -1,7 +1,7 @@
 # [START cloudbuild_quickstart_build]
 steps:
 - name: 'gcr.io/cloud-builders/docker'
-  args: [ 'build', '-t', '$_LOCATION.pkg.dev/$PROJECT_ID/$_REPO/$_IMAGE_NAME:latest', './App' ]
+  args: [ 'build', '-t', '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_IMAGE_NAME:latest', './App' ]
 images:
 - '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_IMAGE_NAME:latest'
 options:
