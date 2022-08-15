@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def main():
-    if requesst.method == 'POST':
+    if request.method == 'POST':
         # get some incomming data
         data = request.get_json()
         return f"Hello {data['name']}"
