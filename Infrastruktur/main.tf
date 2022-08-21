@@ -103,7 +103,7 @@ resource "google_cloud_run_service_iam_binding" "invoker" {
   service = google_cloud_run_service.cloud_run_demo.name
   role = "roles/run.invoker"
   members = [ 
-    "user:otrek.wilke@datanomiq.de",
+    "user:${var.service_owner}",
     "serviceAccount:${google_service_account.cloud_shedule_caller.email}"
     ]
 }

@@ -16,3 +16,8 @@ variable "RunJobName" {
   type = string
   default = "cloud-run-demo"
 }
+
+variable "service_owner" {
+  type = string
+  sensitive = true
+}
