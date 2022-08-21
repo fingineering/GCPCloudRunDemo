@@ -30,6 +30,13 @@ resource "google_service_account" "cloud_run_demo_sa" {
   description  = "Running Cloud Run Scheduled Job to update data in BigQuery under this account"
   display_name = "Cloud Run Demo Service Account"
 }
+# Service account for scheduler to call the function
+resource "google_service_account" "cloud_shedule_caller" {
+  project = var.project_name
+  account_id = "cloudscheduler"
+  description = "A service account to run the scheduler under an invoke the cloud run service"
+  display_name = "Cloud Scheduler Demo User"
+}
 
 /*
  * Container Registry
@@ -65,6 +72,10 @@ data "google_container_registry_image" "demo_container" {
  * Within the service the container image to use is defined. To implement CI/CD
  * Cloud Build will be used to build the image from a dockerfile and update it
  * in the Google Container Registry
+ *
+ * There need some IAM binding to be made:
+ * 1. Cloud Shedules must be allowed to ivoke the cloud run service
+ * 2. Cloud Build must be allowed to edit the cloud run service
  */
 resource "google_cloud_run_service" "cloud_run_demo" {
   project  = var.project_name
@@ -85,6 +96,18 @@ resource "google_cloud_run_service" "cloud_run_demo" {
   }
 
 }
+# allow shedule to run the cloud run service
+resource "google_cloud_run_service_iam_binding" "invoker" {
+  location = var.location
+  project = var.project_name
+  service = google_cloud_run_service.cloud_run_demo.name
+  role = "roles/run.invoker"
+  members = [ 
+    "user:otrek.wilke@datanomiq.de",
+    "serviceAccount:${google_service_account.cloud_shedule_caller.email}"
+    ]
+}
+
 # A Schedule to run the job on
 resource "google_cloud_scheduler_job" "timer_trigger" {
   name             = "scheduled-cloud-run-job"
@@ -103,7 +126,7 @@ resource "google_cloud_scheduler_job" "timer_trigger" {
     uri         = google_cloud_run_service.cloud_run_demo.status[0].url
 
     oidc_token {
-      service_account_email = google_service_account.cloud_run_demo_sa.email
+      service_account_email = google_service_account.cloud_shedule_caller.email
     }
   }
 
