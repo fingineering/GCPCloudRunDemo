@@ -1,14 +1,21 @@
-from distutils.log import debug
 from flask import Flask, request
+from Jobs import run_search_console_query
+
 
 app = Flask(__name__)
 
-@app.route('/')
+@app.route('/', methods = ['GET', 'POST'])
 def main():
     if request.method == 'POST':
         # get some incomming data
         data = request.get_json()
+        # This would be the place where could call your code to run. But that wouldn't be a good idea
+        # Therefore we create a script package, register the scripts and run them all in here
+
         return f"Hello {data['name']}"
+
+    print(run_search_console_query.run())
+
     return "Hello World"
 
 if __name__ == '__main__':
