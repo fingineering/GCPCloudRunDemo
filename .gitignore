@@ -34,3 +34,6 @@ __pycache__
 App/.env
 
 venv
+
+# Visual Studio Code Folder Exclude
+.vscode
