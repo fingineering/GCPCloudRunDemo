@@ -1,7 +1,15 @@
 # [START cloudbuild_quickstart_build]
 steps:
+# build step
 - name: 'gcr.io/cloud-builders/docker'
   args: [ 'build', '-t', '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_IMAGE_NAME:latest', './App' ]
+# push to artifact registry
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_IMAGE_NAME:latest']
+# Deploy Container to Cloud Run
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: gcloud
+  args: ['run', 'deploy', '$_SERVICE_NAME', '--image', '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_IMAGE_NAME:latest', '--region', '$_LOCATION']
 images:
 - '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_IMAGE_NAME:latest'
 options:
