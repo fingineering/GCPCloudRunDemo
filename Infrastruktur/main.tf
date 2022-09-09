@@ -149,6 +149,7 @@ resource "google_cloudbuild_trigger" "demo_cloud_build" {
     "_REPO"       = var.container_name
     "_IMAGE_NAME" = var.container_name
     "_LOCATION"   = var.location
+    "_SERVICE_NAME" = google_cloud_run_service.cloud_run_demo.name
   }
 }
 
