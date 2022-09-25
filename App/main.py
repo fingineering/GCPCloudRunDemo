@@ -17,7 +17,7 @@ def main():
 
         return f"Hello {data['name']}"
 
-    print(run_search_console_query.run())
+    # print(run_search_console_query.run())
 
     return "Hello World"
 
