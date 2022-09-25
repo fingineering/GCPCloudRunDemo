@@ -38,6 +38,14 @@ resource "google_service_account" "cloud_shedule_caller" {
   display_name = "Cloud Scheduler Demo User"
 }
 
+# Service Account to run the cloud build trigger
+resource "google_service_account" "cloud_run_demo_builder" {
+  project = var.project_name
+  account_id = "cloudrundemobuilder"
+  description = "A service account to run the cloud build trigger"
+  display_name = "Cloud Run Demo Build Trigger"
+}
+
 /*
  * Container Registry
  * ==================
@@ -136,6 +144,7 @@ resource "google_cloudbuild_trigger" "demo_cloud_build" {
   name        = "CloudRundDemo"
   project     = var.project_name
   description = "Triggers a new cloud run image to be build, when new code is published"
+  service_account = google_service_account.cloud_run_demo_builder.id
   github {
     owner = "fingineering"
     name  = "GCPCloudRunDemo"
@@ -154,3 +163,11 @@ resource "google_cloudbuild_trigger" "demo_cloud_build" {
 }
 
 # IAM Binding for Cloud Run
+# Allow Cloud Build to edit the cloud run service
+resource "google_cloud_run_service_iam_member" "triggerEditor" {
+  location = var.location
+  project = var.project_name
+  service = google_cloud_run_service.cloud_run_demo.name
+  role = "roles/editor"
+  member = "serviceAccount:${google_service_account.cloud_run_demo_builder.email}"
+}
