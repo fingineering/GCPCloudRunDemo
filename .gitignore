@@ -37,3 +37,6 @@ venv
 
 # Visual Studio Code Folder Exclude
 .vscode
+
+# Apple stuff
+.DS_Store
