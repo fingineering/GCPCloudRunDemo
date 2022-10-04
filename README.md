@@ -53,6 +53,10 @@ WebServer erstellt werden kann.
 
 ## Die Beispiel Flask Anwendung
 
+```bash
+docker run -e PORT=8080 -p 8080:8080 0b04ae2084ce
+```
+
 ## Cloud Run Service aufsetzen
 
 ## Cloud Build Trigger erstellen
