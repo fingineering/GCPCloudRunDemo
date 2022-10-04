@@ -42,6 +42,9 @@ WebServer erstellt werden kann.
 
 ### APIs die in Google Cloud aktiert werden müssen
 
+Neben den Vorraussetungen zur Software müssen auf der Google Cloud Plattform
+einige APIs aktiviert werden: 
+
 - Cloud Run API
 - Cloud Build API
 - Artifact Registry API
@@ -49,7 +52,16 @@ WebServer erstellt werden kann.
 - Cloud Logging API
 - Identity and Access Management API
 
+Die Cloud Run API wird benötigt um einen Cloud Run Service zu erstellen, die
+Artifact Registry wird benötigt, um die Container Abbilder zu speichern. Die
+Cloud Build API und die Identity and Access Management API werden benötigt, um
+eine CI/CD Pipeline zu implementieren. Cloud Scheduler wird in diesem Beispiel
+verwendet um den Service regelmäßig aufzurufen. Da alle Services via Terraform
+erstellt und verwaltet werden, werden die APIs benötigt.
+
 ## Infrastruktur
+
+Das Erstellen der Infrastruktur läuft in mehreren Schritten ab, nur wenn App Code und Container bereits vorhanden sind, kann der gesamte Prozess automatisiert werden.
 
 ## Die Beispiel Flask Anwendung
 
