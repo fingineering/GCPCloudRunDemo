@@ -10,7 +10,7 @@ terraform {
 provider "google" {
   # Configuration options
   project = var.project_name
-  region = var.location
+  region  = var.location
 }
 
 
@@ -32,17 +32,17 @@ resource "google_service_account" "cloud_run_demo_sa" {
 }
 # Service account for scheduler to call the function
 resource "google_service_account" "cloud_shedule_caller" {
-  project = var.project_name
-  account_id = "cloudscheduler"
-  description = "A service account to run the scheduler under an invoke the cloud run service"
+  project      = var.project_name
+  account_id   = "cloudscheduler"
+  description  = "A service account to run the scheduler under an invoke the cloud run service"
   display_name = "Cloud Scheduler Demo User"
 }
 
 # Service Account to run the cloud build trigger
 resource "google_service_account" "cloud_run_demo_builder" {
-  project = var.project_name
-  account_id = "cloudrundemobuilder"
-  description = "A service account to run the cloud build trigger"
+  project      = var.project_name
+  account_id   = "cloudrundemobuilder"
+  description  = "A service account to run the cloud build trigger"
   display_name = "Cloud Run Demo Build Trigger"
 }
 
@@ -52,8 +52,11 @@ resource "google_service_account" "cloud_run_demo_builder" {
  * 
  * Google Cloud Run uses a Docker Container as the compute layer. For a custom
  * application to be run on Cloud Run, a custom container needs to hosted. 
- * In this example the container is hosted in Google Container Registry, it is 
- * as well possible to use any other container registry like DockerHub oder ACR
+ * In this example the container is hosted in Google Artifact Registry, it is 
+ * as well possible to use any other container registry like DockerHub oder ACR.
+ * 
+ * Some variables are used here, to configure the location, the project and the 
+ * the name of the container.
  */
 resource "google_artifact_registry_repository" "container_demo_repo" {
   location      = var.location
@@ -107,13 +110,13 @@ resource "google_cloud_run_service" "cloud_run_demo" {
 # allow shedule to run the cloud run service
 resource "google_cloud_run_service_iam_binding" "invoker" {
   location = var.location
-  project = var.project_name
-  service = google_cloud_run_service.cloud_run_demo.name
-  role = "roles/run.invoker"
-  members = [ 
+  project  = var.project_name
+  service  = google_cloud_run_service.cloud_run_demo.name
+  role     = "roles/run.invoker"
+  members = [
     "user:${var.service_owner}",
     "serviceAccount:${google_service_account.cloud_shedule_caller.email}"
-    ]
+  ]
 }
 
 # A Schedule to run the job on
@@ -141,9 +144,9 @@ resource "google_cloud_scheduler_job" "timer_trigger" {
 }
 # Cloud Build to update the cloud run job
 resource "google_cloudbuild_trigger" "demo_cloud_build" {
-  name        = "CloudRundDemo"
-  project     = var.project_name
-  description = "Triggers a new cloud run image to be build, when new code is published"
+  name            = "CloudRundDemo"
+  project         = var.project_name
+  description     = "Triggers a new cloud run image to be build, when new code is published"
   service_account = google_service_account.cloud_run_demo_builder.id
   github {
     owner = "fingineering"
@@ -155,9 +158,9 @@ resource "google_cloudbuild_trigger" "demo_cloud_build" {
   filename = "cloudbuild.yaml"
 
   substitutions = {
-    "_REPO"       = var.container_name
-    "_IMAGE_NAME" = var.container_name
-    "_LOCATION"   = var.location
+    "_REPO"         = var.container_name
+    "_IMAGE_NAME"   = var.container_name
+    "_LOCATION"     = var.location
     "_SERVICE_NAME" = google_cloud_run_service.cloud_run_demo.name
   }
 }
@@ -166,8 +169,17 @@ resource "google_cloudbuild_trigger" "demo_cloud_build" {
 # Allow Cloud Build to edit the cloud run service
 resource "google_cloud_run_service_iam_member" "triggerEditor" {
   location = var.location
-  project = var.project_name
-  service = google_cloud_run_service.cloud_run_demo.name
-  role = "roles/editor"
-  member = "serviceAccount:${google_service_account.cloud_run_demo_builder.email}"
+  project  = var.project_name
+  service  = google_cloud_run_service.cloud_run_demo.name
+  role     = "roles/editor"
+  member   = "serviceAccount:${google_service_account.cloud_run_demo_builder.email}"
 }
+
+resource "google_cloud_run_service_iam_member" "triggerRunServiceDeveloper" {
+  location = var.location
+  project  = var.project_name
+  service  = google_cloud_run_service.cloud_run_demo.name
+  role     = "roles/run.admin"
+  member   = "serviceAccount:${google_service_account.cloud_run_demo_builder.email}"
+}
+
