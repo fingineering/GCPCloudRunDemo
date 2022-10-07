@@ -140,7 +140,6 @@ resource "google_cloud_scheduler_job" "timer_trigger" {
       service_account_email = google_service_account.cloud_shedule_caller.email
     }
   }
-
 }
 # Cloud Build to update the cloud run job
 resource "google_cloudbuild_trigger" "demo_cloud_build" {

@@ -231,7 +231,138 @@ docker push europe-west3-docker.pkg.dev/snappy-nature-350016/democontainer/democ
 
 ## Cloud Run Service aufsetzen
 
+Da der initiale Container nun in der Aritfact Registry vorhanden ist, kann der Cloud Run Service daraus erstellt werden. Für den Cloud Run Service wird eine neue Resource im `main.tf` erstellt.
+
+```terraform
+resource "google_cloud_run_service" "cloud_run_demo" {
+  project  = var.project_name
+  name     = var.RunJobName
+  location = var.location
+
+  template {
+    spec {
+      containers {
+        image = "europe-west3-docker.pkg.dev/${var.project_name}/${var.container_name}/${var.container_name}:latest"
+      }
+    }
+  }
+
+  traffic {
+    percent         = 100
+    latest_revision = true
+  }
+
+}
+
+# A Schedule to run the job on
+resource "google_cloud_scheduler_job" "timer_trigger" {
+  name             = "scheduled-cloud-run-job"
+  project          = var.project_name
+  description      = "Invoke a Cloud Run container on a schedule."
+  schedule         = "*/8 * * * *"
+  time_zone        = "Europe/Berlin"
+  attempt_deadline = "320s"
+
+  retry_config {
+    retry_count = 2
+  }
+
+  http_target {
+    http_method = "POST"
+    uri         = google_cloud_run_service.cloud_run_demo.status[0].url
+
+    oidc_token {
+      service_account_email = google_service_account.cloud_shedule_caller.email
+    }
+  }
+}
+```
+
+Dieser Service ist zunächst privat, alle Identitäten die diesen Service aufrufen wollen benötigen die Rolle `roles/run.invoker`. Da der Cloud Scheduler den Service regelmäßig aufrufen soll, muss die Identität des Schedulers Mitglied der Rolle sein.
+
+```terraform 
+# allow shedule to run the cloud run service
+resource "google_cloud_run_service_iam_binding" "invoker" {
+  location = var.location
+  project  = var.project_name
+  service  = google_cloud_run_service.cloud_run_demo.name
+  role     = "roles/run.invoker"
+  members = [
+    "user:${var.service_owner}",
+    "serviceAccount:${google_service_account.cloud_shedule_caller.email}"
+  ]
+}
+```
+
+Nun kann der Terraform Dreiklang verwendet werden den Service und den Scheduler Job zu erstellen.
+
 ## Cloud Build Trigger erstellen
+
+Der finale Schritt um ein kontinuierliches deployment des Services zu erreichen ist einen Cloud Build Trigger einzurichten. Der Cloud Build Trigger beobachtet Veränderungen am GitHub Repository und erstellt bei jedem neuen Commit auf dem main branch eine neue Version des Cloud Run Services. Die hier vorgestellte Pipeline beinhaltet nur das Erstellen und Veröffentlichen des Containers. Für eine produktive Implementation ist unbedingt zu empfehlen auch noch ein Testschritt mit einzufügen. Mit dem folgenden Code wird der Trigger mittels Terraform erstellt:
+
+```terraform
+resource "google_cloudbuild_trigger" "demo_cloud_build" {
+  name            = "CloudRundDemo"
+  project         = var.project_name
+  description     = "Triggers a new cloud run image to be build, when new code is published"
+  service_account = google_service_account.cloud_run_demo_builder.id
+  github {
+    owner = "fingineering"
+    name  = "GCPCloudRunDemo"
+    push {
+      branch = "main"
+    }
+  }
+  filename = "cloudbuild.yaml"
+
+  substitutions = {
+    "_REPO"         = var.container_name
+    "_IMAGE_NAME"   = var.container_name
+    "_LOCATION"     = var.location
+    "_SERVICE_NAME" = google_cloud_run_service.cloud_run_demo.name
+  }
+}
+
+# IAM Binding for Cloud Run
+# Allow Cloud Build to edit the cloud run service
+resource "google_cloud_run_service_iam_member" "triggerRunServiceDeveloper" {
+  location = var.location
+  project  = var.project_name
+  service  = google_cloud_run_service.cloud_run_demo.name
+  role     = "roles/run.admin"
+  member   = "serviceAccount:${google_service_account.cloud_run_demo_builder.email}"
+}
+```
+
+Der Cloud Build Trigger nutzt zur Definition des Deployment Processes die Datei `cloudbuild.yaml`, diese enthält die drei Schritte zum Erstellen des Container Abbilds, Veröffentlichen des Abbilds und Erzeugen einer neuen Version des Cloud Run Services
+
+```yaml
+steps:
+# build step
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build', '-t', '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_IMAGE_NAME:latest', './App' ]
+# push to artifact registry
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_IMAGE_NAME:latest']
+# Deploy Container to Cloud Run
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: gcloud
+  args: ['run', 'deploy', '$_SERVICE_NAME', '--image', '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_IMAGE_NAME:latest', '--region', '$_LOCATION']
+images:
+- '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_IMAGE_NAME:latest'
+options:
+  logging: CLOUD_LOGGING_ONLY
+```
+
+1. Erstellen des Container Abbilds mittels des Docker build Tools. Das erste Argument ist die Aktion `build`, das zweite und dritte beziehen sich auf den Tag des Images und das vierte gibt den Ort vor an dem nach dem Dockerfile gesucht wird
+2. Veröffentlichen des Container Images in die Artifact Registry mittels des Cloud Build Docker Tools. Als Argumente werden die Aktion `push` und das Ziel mitgegeben.
+3. Veröffentlichen der neuen Version des Images im Cloud Run Service mittels des Google Cloud SDK Tools `gcloud`
+
+Alle drei Schritte nutzen Variablen, um Projektziel, Image Tag und Ort flexibel durch den Build Trigger zu steuern. Diese Variable werden bei der Erstellung des Triggers mit definiert, d.h. dieser finden sich in der Definition des Cloud Build Triggers in der Terraform Datei. Die Variablen werden *substitutions* genannt, es ist zu beachten, das nutzerdefinierte Variablen mit einem Unterstrich beginnen müssen, nur Systemvariablen, wie die `PROJECT_ID`
+
+Das Erstellen des Cloud Build Triggers kann versagen, in diesem Falle sollten die Einstellungen von Cloud Build in der Cloud Console geprüft werden. Die Service Account Berechtigungen für Cloud Run und Service Accounts müssen aktiviert sein, wie im Bild unten.
+
+![Service Account Berechtigungen](./statics/CloudBuild_settings_deploy_to_cloud_run.png)
 
 ## Zusammenfassung
 
