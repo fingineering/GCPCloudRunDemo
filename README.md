@@ -63,7 +63,7 @@ erstellt und verwaltet werden, werden die APIs benötigt.
 
 Das Erstellen der Infrastruktur läuft in mehreren Schritten ab, nur wenn App Code und Container bereits vorhanden sind, kann der gesamte Prozess automatisiert werden. Für die Definition der Infrastruktur wird ein Ordner Infrastructure erstellt und darin die Dateien `main.tf`, `variables.tf`und terraform.tfvars`
 
-```bash
+```console
 mkdir Infrastructure
 cd Infrastructure
 touch main.tf
@@ -95,6 +95,35 @@ resource "google_service_account" "cloud_run_demo_builder" {
   display_name = "Cloud Run Demo Build Trigger"
 }
 ```
+
+Da der erste Schritt die Einrichtung der Artifact Registry für den Cloud Run Service ist, wird dieser wie folgt hinzugefügt:
+
+```terraform
+resource "google_artifact_registry_repository" "container_demo_repo" {
+  location      = var.location
+  project       = var.project_name
+  repository_id = var.container_name
+  description   = "Demo docker repository"
+  format        = "DOCKER"
+}
+
+// create the url of a container in the registry, by name of container
+data "google_container_registry_image" "demo_container" {
+  name    = var.container_name
+  project = var.project_name
+}
+````
+
+Nun kann der erste Schritt zum Aufsetzen der Infrastruktur mittels des Terraform Dreiklangs durchgeführt werden:
+
+```shell
+# initialize the terraform project
+terraform init
+# check if everything will go as planned
+terraform plan
+# create the infrastructure
+terraform apply
+````
 
 ## Die Beispiel Flask Anwendung
 
