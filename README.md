@@ -197,9 +197,23 @@ gunicorn --bind 0.0.0.0:8080 --workers 1 main:app
 
 ## Docker Container erstellen, ausführen und deployen
 
-```bash
-docker run -e PORT=8080 -p 8080:8080 0b04ae2084ce
+Um einen Service in Cloud Run auszuführen muss dieser in einem Docker Container vorliegen. Dazu wird zunächst ein [Dockerfile](./App/Dockerfile) im App Ordner erstellt. Diese ist einfach gehalten, es basiert auf einem Python Container, kopiert die Dateien aus dem App Ordner und definiert das Start Kommando für `Gunicorn`
+
+In vielen Fällen sind im lokalen Entwicklungsordner Dateien vorhanden die nicht in den Container veröffentlicht werden sollten, damit Dateien explizit aus der Containererzeugung ausgeschlossen werden können kann eine [.dockerignore](./App/.dockerignore) Datei hinzugefügt werden. Diese funktioniert analog der `.gitignore` Dateien.
+
+Um das Veröffentlichen auf die Artifact Registry zu vereinfachen, kann es eine gute Idee sein dem Namensschema der Registry zu folgen: *location—docker.pkg.dev/your-project-id/registryname/containername:latest*. Mittels `docker build` kann das Container Image erstellt werden:
+
+```Shell
+docker build -t LOCATION-docker-pkg.dev/your-project-name/democontainer/democontainer:latest .
 ```
+
+Um das erstellt Image local zu testen kann dieses mittels `docker run` auch lokal ausgeführt werden. Wichtig ist dabei zu beachten die notwendigen Umgebungsvariablen mit zugeben und den Port zu exponieren.
+
+```bash
+docker run -e PORT=8080 -p 8080:8080 <image_id>
+```
+
+> Werden im Webservice Google Identitäten verwendet, dann müssen Informationen über den zu verwendenden Google Account mitgegeben werden. Wie dies im Detail funktioniert findet sich unter [Cloud Run lokal testen](https://cloud.google.com/run/docs/testing/local?hl=de#docker-with-gcp-access)
 
 ### Den ersten Container manuell deployen
 
@@ -219,10 +233,19 @@ docker push europe-west3-docker.pkg.dev/snappy-nature-350016/democontainer/democ
 
 ## Cloud Build Trigger erstellen
 
+## Zusammenfassung
 
+Mit Hilfe von Terraform ist es möglich ein vollständig in Code definierten, kontinuierlich veröffentlichten Google Cloud Run Service zu erstellen. Dazu werden GCP Services verwendet, eine Flask Webapp in einem Container zu verpacken und diesen auf Cloud Run zu veröffentlichen.
 
-## Notizen
+Für Fragen erstellt gerne ein Issue oder ihr findet mich auf [LinkedIn](https://www.linkedin.com/in/owilke/)
 
-- Cloud Build muss roles/run.admin haben um auf den Cloud Run Service deployen zu dürfen.
+Wenn diese Anleitung hilfreich für euch war, lasst doch gerne ein Kommentar, einen Stern oder einen Kaffee da:
+
+![BuyMeACoffee](./statics/black-button.png)
+
+## Quellen
+- [Terraform Cloud Build Registry](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloudbuild_trigger)
 - [Dokumentation des Deployments](https://cloud.google.com/build/docs/deploying-builds/deploy-cloud-run)
-
+- [Terraform 101](https://github.com/fingineering/terraform-101)
+- [Was ist Cloud Run](https://cloud.google.com/run/docs/overview/what-is-cloud-run)
+- [Flask Mega Tutorial](https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world)
