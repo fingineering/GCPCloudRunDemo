@@ -63,7 +63,7 @@ erstellt und verwaltet werden, werden die APIs benötigt.
 
 Das Erstellen der Infrastruktur läuft in mehreren Schritten ab, nur wenn App Code und Container bereits vorhanden sind, kann der gesamte Prozess automatisiert werden. Für die Definition der Infrastruktur wird ein Ordner Infrastructure erstellt und darin die Dateien `main.tf`, `variables.tf`und terraform.tfvars`
 
-```console
+```Shell
 mkdir Infrastructure
 cd Infrastructure
 touch main.tf
@@ -127,9 +127,97 @@ terraform apply
 
 ## Die Beispiel Flask Anwendung
 
+Als Beispielanwendung wird hier eine sehr simple flask Webapp verwendet. Die Webapp beinhaltet eine einzige Route, es wird `Hello World` bei einem `GET` Request zurück gegeben, und mittels `POST` kann die Nachricht personalisiert werden. Die Anwendung dient nur der Demonstration, es können fast beliebige Funktionalitäten umgesetzt werden. 
+
+Es ist auch nur zwingend notwendig flask oder Python zu verwenden, es kann jede Sprache und jedes Framework eingesetzt werden, welches einen Webserver implementieren kann und auf HTTP Anfragen reagieren kann. Flask selbst ist ein sogenanntes Micro Framework und kann flexibel eingesetzt werden, für mehr Informationen empfiehlt sich z.b. das [Flask Mega Tutorial](https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world)
+
+Im Projektverzeichnis muss ein neuer Ordner `App` erzeugt werden, in diesem Ordner wird die Python Datei `main.py`, sowie die [requirements.txt](./App/requirements.txt) Datei erzeugt.
+
+```python
+from flask import Flask, request
+
+
+app = Flask(__name__)
+
+
+@app.route('/', methods=['GET', 'POST'])
+def main():
+    if request.method == 'POST':
+        # get some incomming data
+        data = request.get_json()
+        # This would be the place where could call your code to run.
+        # But that wouldn't be a good idea.
+        # Therefore we create a script package, register the scripts and run
+        # them all in here
+        return f"Hello {data['name']}"
+    return "Hello World"
+
+
+if __name__ == '__main__':
+    """
+    Creating a very basic debug app. Don't use this in production
+    """
+    app.run(
+        debug=True,
+        port=8000,
+        host="0.0.0.0"
+    )
+```
+
+Dieser minimale Webservice kann local ausgeführt werden indem ein virtual environment erzeugt und die in [requirements.txt](./App/requirements.txt) spezifizierten Pakete installiert werden.
+
+```Shell
+# create a virtual environment
+python -m venv venv
+# activate it
+source venv/bin/activate
+# install required packages
+pip install -r requirements.txt
+```
+
+Die App kann nun local ausgeführt werden mittels:
+
+```Shell
+python main.py
+```
+
+Zum Testen kann im Browser die Adresse [localhost:8080](http://localhost:8080) aufgerufen werden oder mittels curl ein `POST` Request an den Service gesendet werden.
+
+```Shell
+curl -X POST -H "Content-Type: application/json" \
+    -d '{"name": "FooBar"}' \
+    http://localhost:8080
+```
+
+Der mit flask mitgelieferte Web Server sollte nur zu Entwicklungszwecken verwendet werden, in produktiven Umgebungen kann z.b. *gunicorn* eingesetzt werden. Gunicorn wird in diesem Beispiel später auch im Container verwendet werden.
+
+```Shell
+gunicorn --bind 0.0.0.0:8080 --workers 1 main:app
+```
+
+## Docker Container erstellen, ausführen und deployen
+
 ```bash
 docker run -e PORT=8080 -p 8080:8080 0b04ae2084ce
 ```
+
+### Den ersten Container manuell deployen
+
+Bevor es möglich ist den Cloud Run Service zu erstellen muss das Container Abbild einmal manuell in die Artifact Registry veröffentlicht werden.
+
+```Shell
+docker push europe-west3-docker.pkg.dev/snappy-nature-350016/democontainer/democontainer:latest
+```
+
+{% note %}
+
+Erstellen und veröffentlichen des Container Abbilds kann auch in einem Kommando erfolgen:
+
+```Shell
+docker buildx build -t name_of_image —push -f Dockerfile
+````
+
+{% endnote %}
 
 ## Cloud Run Service aufsetzen
 
