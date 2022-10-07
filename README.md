@@ -241,7 +241,7 @@ Für Fragen erstellt gerne ein Issue oder ihr findet mich auf [LinkedIn](https:/
 
 Wenn diese Anleitung hilfreich für euch war, lasst doch gerne ein Kommentar, einen Stern oder einen Kaffee da:
 
-![BuyMeACoffee](./statics/black-button.png)
+![[BuyMeACoffee](https://www.buymeacoffee.com/owil)](./statics/black-button.png)
 
 ## Quellen
 - [Terraform Cloud Build Registry](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloudbuild_trigger)
