@@ -209,15 +209,11 @@ Bevor es möglich ist den Cloud Run Service zu erstellen muss das Container Abbi
 docker push europe-west3-docker.pkg.dev/snappy-nature-350016/democontainer/democontainer:latest
 ```
 
-{% note %}
-
-Erstellen und veröffentlichen des Container Abbilds kann auch in einem Kommando erfolgen:
-
-```Shell
-docker buildx build -t name_of_image —push -f Dockerfile
-````
-
-{% endnote %}
+> Erstellen und veröffentlichen des Container Abbilds kann auch in einem Kommando erfolgen:
+>
+> ```Shell
+> docker buildx build -t name_of_image —push -f Dockerfile
+> ````
 
 ## Cloud Run Service aufsetzen
 
