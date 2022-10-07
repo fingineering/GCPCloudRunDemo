@@ -3,7 +3,7 @@
 Es gibt Gelegenheiten, da ist eine oder mehrere serverlose Funktionen nicht
 ausreichend, um einen Service darzustellen. Für diese Fälle gibt es auf der
 Google Cloud Plattform Google Cloud Run. Cloud Run bietet zwei Möglichkeiten
-Container auszuführen. Services und Jobs. In diesem Bespiel wird ein Google
+Container auszuführen. Services und Jobs. In diesem Beispiel wird ein Google
 Cloud Run Service mittels Terraform definiert, welcher auf Basis eines
 Scheduler Jobs regelmäßig aufgerufen wird. Cloud Build wird dazu genutzt den
 aktuellen Code auf den Service zu veröffentlichen.
@@ -15,9 +15,9 @@ Cloud Run Services aus einem Github Repository kontinuierlich zu aktualisieren.
 Als Beispiel wird ein stark vereinfachter Flask Webservice verwendet. Mittels
 Cloud Scheduler wird dieser Service regelmäßig aufgerufen.
 
-## Veraussetungen
+## Voraussetzungen
 
-Bevor der Service aufgesetzt werden kann müssen einige Vorraussetungen erfüllt
+Bevor der Service aufgesetzt werden kann müssen einige Voraussetzungen erfüllt
 sein. Es wird ein Google Cloud Project benötigt, sowie ein Github Account. Auf
 dem Computer, welcher zur Entwicklung verwendet werden soll, müssen Terraform,
 Google Cloud SDK, git, Docker und Python installiert sein. In diesem Beispiel
@@ -33,16 +33,16 @@ WebServer erstellt werden kann.
   Google Cloud Source Repositories umgesetzt werden. Als Alternative zu Cloud
   Build kann Github Actions eingesetzt werden.
 - Terraform, Google Cloud SDK, Docker und Python müssen auf dem verwendeten
-  Computer installiert werden, hierzu empfiehlt sich ein Paketemanager wie
+  Computer installiert werden, hierzu empfiehlt sich ein Paketmanager wie
   Homebrew oder Chocolatey. Linux Nutzer verwenden am besten den in ihrer
   Distribution mitgelieferten.
 - Soll nichts installiert werden, dann kann auch die Google Cloud Shell
   verwendet werden, diese findet sich im in der [Cloud
   Console](https://console.cloud.google.com)
 
-### APIs die in Google Cloud aktiert werden müssen
+### APIs die in Google Cloud aktiviert werden müssen
 
-Neben den Vorraussetungen zur Software müssen auf der Google Cloud Plattform
+Neben den Voraussetzungen zur Software müssen auf der Google Cloud Plattform
 einige APIs aktiviert werden: 
 
 - Cloud Run API
@@ -61,7 +61,40 @@ erstellt und verwaltet werden, werden die APIs benötigt.
 
 ## Infrastruktur
 
-Das Erstellen der Infrastruktur läuft in mehreren Schritten ab, nur wenn App Code und Container bereits vorhanden sind, kann der gesamte Prozess automatisiert werden.
+Das Erstellen der Infrastruktur läuft in mehreren Schritten ab, nur wenn App Code und Container bereits vorhanden sind, kann der gesamte Prozess automatisiert werden. Für die Definition der Infrastruktur wird ein Ordner Infrastructure erstellt und darin die Dateien `main.tf`, `variables.tf`und terraform.tfvars`
+
+```bash
+mkdir Infrastructure
+cd Infrastructure
+touch main.tf
+touch terraform.tfvars
+```
+
+Insgesamt werden vier Komponenten erstellt, das Artifact Registry Repository, ein Cloud Run Service, ein Cloud Build Trigger und ein Cloud Scheduler Job. Bevor die eigentliche Infrastruktur erzeugt werden kann müssen einige Service Accounts definiert werden. Ziel ist es, das jedes Asset eine eigene Identität zugewiesen werden kann. Daher werden drei Service Accounts erstellt, für den Run Service, den Build Trigger und den Scheduler Job.
+
+```terraform
+resource "google_service_account" "cloud_run_demo_sa" {
+  project      = var.project_name
+  account_id   = "cloudrundemosa"
+  description  = "Running Cloud Run Scheduled Job to update data in BigQuery under this account"
+  display_name = "Cloud Run Demo Service Account"
+}
+# Service account for scheduler to call the function
+resource "google_service_account" "cloud_shedule_caller" {
+  project      = var.project_name
+  account_id   = "cloudscheduler"
+  description  = "A service account to run the scheduler under an invoke the cloud run service"
+  display_name = "Cloud Scheduler Demo User"
+}
+
+# Service Account to run the cloud build trigger
+resource "google_service_account" "cloud_run_demo_builder" {
+  project      = var.project_name
+  account_id   = "cloudrundemobuilder"
+  description  = "A service account to run the cloud build trigger"
+  display_name = "Cloud Run Demo Build Trigger"
+}
+```
 
 ## Die Beispiel Flask Anwendung
 
